@@ -238,9 +238,9 @@ module.exports = {
                             };
                             const collector2 = channelManage.createMessageComponentCollector({ filter: collectorFilter2 });
                             collector2.on('collect', async i => {
-                                if (i.customId === 'participer') {
+                                if (i.customId === 'remove') {
 
-                                } else if (i.customId === 'ne_pas_participer') {
+                                } else if (i.customId === 'viewlist') {
 
                                 }
                             });
