@@ -5,6 +5,7 @@ const Op = Sequelize.Op;
 dotenv.config({ path: '../../../config.js' });
 const { events } = require('../../../models/Events')
 const { UsernameExists } = require('../../../functions')
+const schedule = require('node-schedule');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -44,6 +45,8 @@ module.exports = {
         const gamemode = interaction.options.getString('mode');
         const discordUserId = interaction.user.id;
         let isGood = true;
+        let reminder
+        let startEvent
         const randomId = Math.floor(100000 + Math.random() * 900000);
         if (!gamename.match(/^[a-zA-Z0-9 ]{1,50}$/)) {
             return interaction.reply({ content: 'Le nom de la partie doit être alphanumérique et jusqu\'à 50 caractères.', ephemeral: true });
@@ -83,10 +86,10 @@ module.exports = {
                     }
                 }
             }).then(async (count) => {
-                if (count >= 4) {
+                if (count >= process.env.maxMulti) {
                     isGood = false
                     try {
-                        return interaction.reply({ content: 'Il y a déjà 4 Mutli planifiés dans cette plage horaire. Choisis choisir un autre horaire.', ephemeral: true });
+                        return interaction.reply({ content: `Il y a déjà ${process.env.maxMulti} Mutli planifiés dans cette plage horaire. Choisis choisir un autre horaire.`, ephemeral: true });
                     } catch (e) {
                         return console.log(e)
                     }
@@ -124,7 +127,7 @@ module.exports = {
                                 })
                                 .setTimestamp()
                                 .setFooter({ text: `ID:${randomId}` });
-                            const row = new ActionRowBuilder()
+                            const buttonsComponentsEvent = new ActionRowBuilder()
                                 .addComponents(
                                     new ButtonBuilder()
                                         .setCustomId('participer')
@@ -135,14 +138,14 @@ module.exports = {
                                         .setLabel('Ne pas participer')
                                         .setStyle(ButtonStyle.Danger)
                                 );
-                            const messageEvent = await channel.send({ embeds: [embedEvent], components: [row] });
+                            const messageEvent = await channel.send({ embeds: [embedEvent], components: [buttonsComponentsEvent] });
                             const collectorFilter = (t) => {
                                 const isButton = t.isButton();
                                 const customId = t.customId;
                                 return isButton && customId;
                             };
-                            const collector = channel.createMessageComponentCollector({ filter: collectorFilter });
-                            collector.on('collect', async i => {
+                            const collectorEvent = channel.createMessageComponentCollector({ filter: collectorFilter });
+                            collectorEvent.on('collect', async i => {
                                 const roleName = `Multi ${randomId}`;
                                 const role = i.guild.roles.cache.find(r => r.name === roleName);
                                 if (!role) {
@@ -157,7 +160,7 @@ module.exports = {
                                         await i.followUp({ content: 'Tu participes déjà à cette partie.', ephemeral: true });
                                     } else {
 
-                                        if (event.participants >= 16) {
+                                        if (event.participants >= process.env.maxPlayers) {
                                             await i.followUp({ content: 'Désolé, cette partie est déjà pleine.', ephemeral: true });
                                             return;
                                         } else {
@@ -166,7 +169,7 @@ module.exports = {
                                             await event.save();
                                             embedEvent.setFields({
                                                 name: "Participants",
-                                                value: `${event.participants}/16`,
+                                                value: `${event.participants}/${process.env.maxPlayers}`,
                                                 inline: false
                                             });
                                             await messageEvent.edit({ embeds: [embedEvent] });
@@ -184,7 +187,7 @@ module.exports = {
                                         await event.save();
                                         embedEvent.setFields({
                                             name: "Participants",
-                                            value: `${event.participants}/16`,
+                                            value: `${event.participants}/${process.env.maxPlayers}`,
                                             inline: false
                                         });
                                         await messageEvent.edit({ embeds: [embedEvent] });
@@ -205,9 +208,25 @@ module.exports = {
                                 participants: 0
                             });
 
+                            try {
+                                const tenMinutesBefore = new Date(date_ts - (process.env.reminderAlert * 6000));
+                                reminder = schedule.scheduleJob(tenMinutesBefore, function() {
+                                    console.log(`Rappel: L'événement ${gamename} commence dans ${reminderAlert * 6000} minutes!`);
+                                });
+                    
+                                startEvent = schedule.scheduleJob(date_ts, function() {
+                                    console.log(`Rappel: L'événement ${gamename} commence maintenant!`);
+
+                                });
+                            } catch(e){
+                                console.log(e)
+                            }
+                            
+                            
+                            // Planifier le rappel à l'heure de l'événement
+                           
 
                         } catch (e) {
-                            console.log(e);
                             await interaction.followUp({ content: 'Erreur lors de l\'envoi de la réponse.', ephemeral: true });
                         }
                         try {
@@ -219,7 +238,7 @@ module.exports = {
                                 .setTimestamp()
                                 .setFooter({ text: `ID:${randomId}` });
 
-                            const row2 = new ActionRowBuilder()
+                            const buttonsComponentsModeration = new ActionRowBuilder()
                                 .addComponents(
                                     new ButtonBuilder()
                                         .setCustomId('remove')
@@ -230,18 +249,31 @@ module.exports = {
                                         .setLabel('Voir les participants')
                                         .setStyle(ButtonStyle.Success)
                                 );
-                            const messageManage = await channelManage.send({ embeds: [EmbedManage], components: [row2] });
+                            const messageManage = await channelManage.send({ embeds: [EmbedManage], components: [buttonsComponentsModeration] });
                             const collectorFilter2 = (m) => {
                                 const isButton = m.isButton();
                                 const customId = m.customId;
                                 return isButton && customId;
                             };
-                            const collector2 = channelManage.createMessageComponentCollector({ filter: collectorFilter2 });
-                            collector2.on('collect', async i => {
+                            const collectorModeration = channelManage.createMessageComponentCollector({ filter: collectorFilter2 });
+                            collectorModeration.on('collect', async i => {
                                 if (i.customId === 'remove') {
-
+                                    //Supprime les deux schedules
+                                    await i.deferUpdate();
+                                    startEvent.cancel()
+                                    reminder.cancel()
+                                    await i.followUp({ content: `Multi #${randomId} annulé`, ephemeral: true });
                                 } else if (i.customId === 'viewlist') {
+                                    await i.deferUpdate();
 
+                                    const role = i.guild.roles.cache.find(role => role.name === `Multi ${randomId}`);
+                                    const members = role.members.map(member => member.user.tag).join('\n');
+                                    const embed = new EmbedBuilder()
+                                        .setTitle(`Participants du ${role.name}`)
+                                        .setDescription(members || "Pas de participants pour le moment")
+                                        .setColor(role.hexColor || '#0099ff') 
+                                        .setTimestamp();
+                                    await i.followUp({ embeds: [embed], ephemeral: true  });
                                 }
                             });
 
