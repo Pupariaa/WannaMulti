@@ -1,10 +1,9 @@
 const dotenv = require('dotenv');
-const { Client, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, User } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 dotenv.config({ path: '../../../config.js' });
 const { events, osuLink } = require('../../../models/Events')
-const { UsernameExists } = require('../../../functions')
 const schedule = require('node-schedule');
 
 module.exports = {
@@ -37,7 +36,6 @@ module.exports = {
         const gamename = interaction.options.getString('nom');
         const date = interaction.options.getString('date');
         const heure = interaction.options.getString('heure');
-        // const pseudo_osu = interaction.options.getString('pseudo_osu');
         const gamemode = interaction.options.getString('mode');
         const discordUserId = interaction.user.id;
         let isGood = true;
@@ -76,9 +74,8 @@ module.exports = {
 
         if (!result) {
             return interaction.reply({ content: 'Tu ne peux pas créer de multi tant que tu n\'as pas linké ton compte Osu!\n fait **/link** pour linker ton compte osu!', ephemeral: true });
-        } 
+        }
         const pseudo_osu = result.osu_username
-
 
         try {
             events.count({
@@ -209,25 +206,19 @@ module.exports = {
                                 rolename: `Multi ${randomId}`,
                                 participants: 0
                             });
-
                             try {
                                 const tenMinutesBefore = new Date(date_ts - (process.env.reminderAlert * 6000));
-                                reminder = schedule.scheduleJob(tenMinutesBefore, function() {
+                                reminder = schedule.scheduleJob(tenMinutesBefore, function () {
                                     console.log(`Rappel: L'événement ${gamename} commence dans ${process.env.reminderAlert * 6000} minutes!`);
                                 });
-                    
-                                startEvent = schedule.scheduleJob(date_ts, function() {
+
+                                startEvent = schedule.scheduleJob(date_ts, function () {
                                     console.log(`Rappel: L'événement ${gamename} commence maintenant!`);
 
                                 });
-                            } catch(e){
+                            } catch (e) {
                                 console.log(e)
                             }
-                            
-                            
-                            // Planifier le rappel à l'heure de l'événement
-                           
-
                         } catch (e) {
                             await interaction.followUp({ content: 'Erreur lors de l\'envoi de la réponse.', ephemeral: true });
                         }
@@ -260,7 +251,6 @@ module.exports = {
                             const collectorModeration = channelManage.createMessageComponentCollector({ filter: collectorFilter2 });
                             collectorModeration.on('collect', async i => {
                                 if (i.customId === 'remove') {
-                                    //Supprime les deux schedules
                                     await i.deferUpdate();
                                     startEvent.cancel()
                                     reminder.cancel()
@@ -273,9 +263,9 @@ module.exports = {
                                     const embed = new EmbedBuilder()
                                         .setTitle(`Participants du ${role.name}`)
                                         .setDescription(members || "Pas de participants pour le moment")
-                                        .setColor(role.hexColor || '#0099ff') 
+                                        .setColor(role.hexColor || '#0099ff')
                                         .setTimestamp();
-                                    await i.followUp({ embeds: [embed], ephemeral: true  });
+                                    await i.followUp({ embeds: [embed], ephemeral: true });
                                 }
                             });
 
@@ -295,7 +285,6 @@ module.exports = {
             console.log(e);
             isGood = true
             return interaction.reply({ content: 'Format de date ou d\'heure invalide.', ephemeral: true });
-
         }
 
     }

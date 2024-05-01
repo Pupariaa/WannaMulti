@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const{db_wannamulti, db_bellafiora} = require('../sequelize')
-console.log(db_bellafiora)
 const events = db_wannamulti.define('Event', {
     id: {
         type: DataTypes.INTEGER,

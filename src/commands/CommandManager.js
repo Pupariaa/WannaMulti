@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 const { Collection } = require('discord.js');
@@ -14,14 +13,14 @@ class CommandHandler {
     constructor(client) {
         this.client = client;
         this.commands = new Collection();
-        this.commandsPath = './src/commands/handlers'
+        this.commandsPath = './src/commands/discord'
         this.rest = new REST({ version: '10' }).setToken(process.env.disbot_token);
     }
 
     loadCommands() {
         const commandFiles = fs.readdirSync(this.commandsPath).filter(file => file.endsWith('.js'));
         for (const file of commandFiles) {
-            const command = require(`./handlers/${file}`);
+            const command = require(`./discord/${file}`);
             if ('data' in command && 'execute' in command) {
                 this.client.commands.set(command.data.name, command);
             } else {

@@ -1,6 +1,5 @@
 const dotenv = require('dotenv');
-const { Client, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const Sequelize = require('sequelize');
+const {SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 dotenv.config({ path: '../../../config.js' });
 const { osuLink } = require('../../../models/Events');
 const { UsernameExists } = require('../../../functions');
@@ -30,12 +29,11 @@ module.exports = {
             clearInterval(userIntervals[userId]);
             delete userIntervals[userId];
         }
-
         let osuId = await UsernameExists(pseudo_osu);
         let embed = new EmbedBuilder()
             .setTitle(`Link Osu!`)
             .setColor('#0099ff')
-            .setDescription(`Patiente un petit moment.. Je génère un lien !`)
+            .setDescription(`Patiente un petit moment.. Je réfléchis`)
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed], fetchReply: true });
@@ -46,7 +44,6 @@ module.exports = {
                     discord_id: userId
                 }
             });
-
             if (result) {
                 if (result.wait === "1") {
                     userIntervals[userId] = setInterval(async () => {

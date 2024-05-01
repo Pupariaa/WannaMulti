@@ -2,7 +2,6 @@ const Discord = require('discord.js')
 const bjs = require("bancho.js");
 const CommandHandler = require('./src/commands/CommandManager');
 const { Collection, Events, EmbedBuilder } = require('discord.js');
-const { events } = require('./models/Events')
 const dotenv = require('dotenv')
 const envFile = './config.env';
 dotenv.config({ path: envFile });
@@ -86,7 +85,6 @@ ircClient.connect()
 ircClient.on('PM', async (message) => {
 
   const content = message.message;
-  // const from = message.user.ircUsername;
   if (content.startsWith('!')) {
     let index = content.indexOf('!');
 
@@ -120,8 +118,6 @@ async function LoadRoute(route) {
       }
     });
   })
-  
-
 }
 
 
