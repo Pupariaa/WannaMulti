@@ -1,7 +1,7 @@
 const Discord = require('discord.js')
 const bjs = require("bancho.js");
 const CommandHandler = require('./src/commands/CommandManager');
-const { Collection, Events } = require('discord.js');
+const { Collection, Events, EmbedBuilder } = require('discord.js');
 const { events } = require('./models/Events')
 const dotenv = require('dotenv')
 const envFile = './config.env';
@@ -18,6 +18,42 @@ client.on('ready', async () => {
   const commandHandler = new CommandHandler(client);
   commandHandler.loadCommands();
   commandHandler.deployCommands();
+
+  client.on('guildMemberAdd', async (member) => {
+    const welcomeChannel = member.guild.channels.cache.get(process.env.welcome_channel)
+    const pseudo_name = member.user.username;
+
+    const greetings = [
+      `Bienvenue sur Wanna Multi FR, ${pseudo_name} ! J'espère que tu passeras un bon moment ici.`,
+      `Salut ${pseudo_name} ! Content de te voir sur Wanna Multi FR.`,
+      `Bonjour ${pseudo_name}, nous sommes ravis de t'accueillir sur Wanna Multi FR, le serveur Discord.`,
+      `Salut ${pseudo_name}, j'espère que tu trouveras des gens sympas pour jouer avec toi sur Wanna Multi FR.`,
+      `Bonjour ${pseudo_name}, nous sommes heureux que tu aies rejoint notre communauté de joueurs sur Wanna Multi FR.`,
+      `Hey ${pseudo_name}, nous sommes ravis de t'accueillir parmi nous sur Wanna Multi FR.`,
+      `Bonjour ${pseudo_name}, bienvenue sur Wanna Multi FR ! J'espère que tu te sentiras comme chez toi.`,
+      `Salut ${pseudo_name}, c'est génial que tu aies rejoint Wanna Multi FR ! N'hésite pas à explorer et à participer.`,
+      `Hey ${pseudo_name}, bienvenue sur Wanna Multi FR ! Nous avons hâte de jouer avec toi.`,
+      `Bonjour ${pseudo_name}, sois le bienvenu sur Wanna Multi FR ! Nous sommes impatients de te rencontrer.`,
+      `Salut ${pseudo_name}, nous sommes ravis que tu aies choisi de rejoindre la communauté de Wanna Multi FR.`,
+      `Hey ${pseudo_name}, bienvenue sur Wanna Multi FR ! Nous espérons que tu passeras un bon moment ici.`,
+      `Salut ${pseudo_name}, sois le bienvenu sur Wanna Multi FR ! Nous sommes impatients de jouer avec toi.`,
+      `Bonjour ${pseudo_name}, nous sommes ravis de t'accueillir sur Wanna Multi FR, où tu pourras rencontrer des gens sympas et jouer à des jeux amusants.`,
+      `Hey ${pseudo_name}, sois le bienvenu sur Wanna Multi FR, le serveur où tu peux te faire de nouveaux amis tout en jouant à tes jeux préférés.`,
+      `Bonjour ${pseudo_name}, nous sommes ravis que tu aies rejoint notre communauté sur Wanna Multi FR ! Amuse-toi bien et fais-toi des amis !`,
+      `Salut ${pseudo_name}, bienvenue sur Wanna Multi FR, où tu peux trouver des joueurs de tous niveaux pour jouer à Osu!`
+    ];
+    const randomNum = Math.floor(Math.random() * greetings.length) + 1;
+    if (!member.user.avatarURL()) {
+      avatar = "https://cdn.discordapp.com/embed/avatars/4.png";
+    } else {
+      avatar = member.user.avatarURL();
+    }
+    const phrase = greetings[randomNum];
+    const generalMessage = new EmbedBuilder()
+    .setColor(0x0099FF)
+    .setAuthor({ name: `${phrase}`, iconURL: `${avatar}` })
+    welcomeChannel.send({ embeds: [generalMessage] });
+  })
 
   client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
@@ -42,9 +78,6 @@ client.on('ready', async () => {
 
 client.login(process.env.disbot_token);
 
-
-
-
 const ircClient = new bjs.BanchoClient({ username: process.env.irc_username, password: process.env.irc_password });
 
 ircClient.connect()
@@ -53,7 +86,7 @@ ircClient.on('PM', async (message) => {
   const content = message.message;
   // const from = message.user.ircUsername;
   if (content.startsWith('!host')) {
-    console.log('commande')
+    
   } else {
     if (!await checkUserOnline()) {
       console.log()
