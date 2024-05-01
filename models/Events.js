@@ -74,5 +74,37 @@ const clients = db_bellafiora.define('clients', {
     timestamps: false,
     freezeTableName: true
 });
+const osuLink = db_wannamulti.define('osulink', {
+    discord_id: {
+        type: DataTypes.STRING(64),
+        primaryKey: true,
+        autoIncrement: true
+    },
+    osu_username: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        defaultValue: null
+    },
+    osu_id: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        defaultValue: null
+    }, 
+    date: {
+        type: DataTypes.STRING(128),
+        allowNull: true,
+        defaultValue: null
+    },
+    wait: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        defaultValue: null
+    },
 
-module.exports = {events, clients} 
+}, {
+    tableName: 'osulink',
+    timestamps: false,
+    freezeTableName: true
+});
+
+module.exports = {events, clients, osuLink} 
