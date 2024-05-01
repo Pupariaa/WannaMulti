@@ -3,7 +3,7 @@ const { Client, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuild
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 dotenv.config({ path: '../../../config.js' });
-const { events } = require('../../../models/Events')
+const { events, osuLink } = require('../../../models/Events')
 const { UsernameExists } = require('../../../functions')
 const schedule = require('node-schedule');
 
@@ -13,10 +13,6 @@ module.exports = {
         .setDescription('Créer une partie')
         .addStringOption(option =>
             option.setName('nom')
-                .setDescription('Obligatoire')
-                .setRequired(true))
-        .addStringOption(option =>
-            option.setName('pseudo_osu')
                 .setDescription('Obligatoire')
                 .setRequired(true))
         .addStringOption(option =>
@@ -41,7 +37,7 @@ module.exports = {
         const gamename = interaction.options.getString('nom');
         const date = interaction.options.getString('date');
         const heure = interaction.options.getString('heure');
-        const pseudo_osu = interaction.options.getString('pseudo_osu');
+        // const pseudo_osu = interaction.options.getString('pseudo_osu');
         const gamemode = interaction.options.getString('mode');
         const discordUserId = interaction.user.id;
         let isGood = true;
@@ -50,9 +46,6 @@ module.exports = {
         const randomId = Math.floor(100000 + Math.random() * 900000);
         if (!gamename.match(/^[a-zA-Z0-9 ]{1,50}$/)) {
             return interaction.reply({ content: 'Le nom de la partie doit être alphanumérique et jusqu\'à 50 caractères.', ephemeral: true });
-        }
-        if (pseudo_osu.length > 16) {
-            return interaction.reply({ content: 'Le pseudo osu doit avoir 16 caractères ou moins.', ephemeral: true });
         }
         if (!date.match(/^\d{2}-\d{2}-\d{4}$/)) {
             return interaction.reply({ content: 'La date doit être au format JJ-MM-AAAA.', ephemeral: true });
@@ -74,10 +67,19 @@ module.exports = {
         if (startTime < currentDate) {
             return interaction.reply({ content: 'Tu ne peux pas créer un multi à une date passée.', ephemeral: true });
         }
+        const result = await osuLink.findOne({
+            where: {
+                discord_id: interaction.member.id,
+                wait: "0"
+            }
+        });
 
-        if (!await UsernameExists(pseudo_osu)) {
-            return interaction.reply({ content: 'Ton pseudo n\'est pas valide.', ephemeral: true });
-        }
+        if (!result) {
+            return interaction.reply({ content: 'Tu ne peux pas créer de multi tant que tu n\'as pas linké ton compte Osu!\n fait **/link** pour linker ton compte osu!', ephemeral: true });
+        } 
+        const pseudo_osu = result.osu_username
+
+
         try {
             events.count({
                 where: {
@@ -173,7 +175,7 @@ module.exports = {
                                                 inline: false
                                             });
                                             await messageEvent.edit({ embeds: [embedEvent] });
-                                            await i.followUp({ content: 'Tu as été ajouté à la partie.\nTu sera notifié 10 min à l\'avance.', ephemeral: true });
+                                            await i.followUp({ content: `Tu as été ajouté à la partie.\nTu sera notifié ${process.env.reminderAlert * 6000} min à l\'avance.`, ephemeral: true });
                                         }
                                     }
                                 } else if (i.customId === 'ne_pas_participer') {
@@ -211,7 +213,7 @@ module.exports = {
                             try {
                                 const tenMinutesBefore = new Date(date_ts - (process.env.reminderAlert * 6000));
                                 reminder = schedule.scheduleJob(tenMinutesBefore, function() {
-                                    console.log(`Rappel: L'événement ${gamename} commence dans ${reminderAlert * 6000} minutes!`);
+                                    console.log(`Rappel: L'événement ${gamename} commence dans ${process.env.reminderAlert * 6000} minutes!`);
                                 });
                     
                                 startEvent = schedule.scheduleJob(date_ts, function() {
