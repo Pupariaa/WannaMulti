@@ -24,6 +24,7 @@
     "irc-upd": "^0.11.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.9.7",
+    "node-schedule": "^2.1.1",
     "querystring": "^0.2.1",
     "sequelize": "^6.37.3",
     "tslib": "^2.6.2",
