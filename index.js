@@ -8,13 +8,15 @@ const envFile = './config.env';
 dotenv.config({ path: envFile });
 const client = new Discord.Client({ intents: 3276799, partials: ['MESSAGE', 'REACTION'] });
 const { checkUserOnline } = require('./functions')
+const path = require('path')
+const fs = require('fs')
 
 client.commands = new Collection();
 
 client.on('ready', async () => {
 
   const guild = client.guilds.cache.get(process.env.discord_guid);
-  
+
   const commandHandler = new CommandHandler(client);
   commandHandler.loadCommands();
   commandHandler.deployCommands();
@@ -50,8 +52,8 @@ client.on('ready', async () => {
     }
     const phrase = greetings[randomNum];
     const generalMessage = new EmbedBuilder()
-    .setColor(0x0099FF)
-    .setAuthor({ name: `${phrase}`, iconURL: `${avatar}` })
+      .setColor(0x0099FF)
+      .setAuthor({ name: `${phrase}`, iconURL: `${avatar}` })
     welcomeChannel.send({ embeds: [generalMessage] });
   })
 
@@ -85,15 +87,42 @@ ircClient.on('PM', async (message) => {
 
   const content = message.message;
   // const from = message.user.ircUsername;
-  if (content.startsWith('!host')) {
-    
+  if (content.startsWith('!')) {
+    let index = content.indexOf('!');
+
+    if (index !== -1) {
+      let subString = content.substring(index + 1);
+      let splits = subString.trim().split(/\s+/);
+      const route = await LoadRoute(splits[0])
+      if (route) {
+        message.user.sendMessage(await route.Static());
+      } else {
+        message.user.sendMessage(`Commande inconnu. Utilise !help pour plus de détails`);
+      }
+    }
   } else {
     if (!await checkUserOnline()) {
-      console.log()
+  
       message.user.sendMessage(`Hey ! Je ne suis pas connecté. Ceci est un message automatique`);
     }
   }
 });
+
+async function LoadRoute(route) {
+  return new Promise((resolve, reject) => {
+    const routePath = path.join(__dirname, 'src/commands/irc', `${route}.js`);
+    fs.access(routePath, fs.constants.F_OK, (err) => {
+      if (err) {
+        resolve(false)
+      } else {
+        const fileCommand = require(routePath)
+        resolve(fileCommand);
+      }
+    });
+  })
+  
+
+}
 
 
 
