@@ -21,7 +21,11 @@ async function checkUserOnline() {
 async function UsernameExists(username) {
   try {
     const response = await axios.get(`https://osu.ppy.sh/api/get_user?k=${process.env.osu_apikey}&u=${username}`);
-    return response.data.length > 0;
+    if(response.data[0].user_id){
+      return response.data[0].user_id
+    } else {
+      return false
+    }
   } catch (error) {
     console.error('Error checking username:', error);
     return false;
